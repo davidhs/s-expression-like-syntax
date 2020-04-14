@@ -1,0 +1,24 @@
+{
+  "extends": "eslint:recommended",
+  "parserOptions": {
+    "ecmaVersion": 11,
+    "sourceType": "module"
+  },
+  "rules": {
+    "semi": ["error", "always"],
+    "no-unused-vars": ["off"],
+    "no-constant-condition": ["off"],
+    "no-empty": ["off"],
+    "eqeqeq": ["error", "always"],
+    "comma-dangle": ["error", "always-multiline"],
+    "no-multiple-empty-lines": ["error", { "max": 2, "maxBOF": 1, "maxEOF": 1 }],
+    "no-inner-declarations": ["off"]
+  },
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "globals": {
+    "globalThis": true
+  }
+}
