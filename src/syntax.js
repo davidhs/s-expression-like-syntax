@@ -4,6 +4,8 @@
 // A parser that parses text that looks like S-expressions, but note quite, and
 // with a bunch of other extensions.
 //
+// v2020-04-15-145330
+//
 // ---------------
 // List delimiters
 // ---------------
@@ -81,17 +83,19 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions
 
+
 /**
- * Asserts that a boolean expression is `true` at runtime.
+ * Asserts that a boolean expression is `true` at runtime.  Throws an exception
+ * if `condition` is false (or fasly).
  * 
- * Helper function
+ * Use the `assert` variable instead of this function.
  * 
  * @param {boolean} condition Boolean expression.
  * @param {(string | (() => string))=} message_or_callback Error message or callback that returns an error message.
  * 
- * @throws
+ * @throws if `condition` is false or `falsy`.
  */
-function assertFn(condition, message_or_callback = "") {
+function assert_function(condition, message_or_callback = "") {
   if (!condition) {
     if (typeof message_or_callback === "string") {
       const message = message_or_callback;
@@ -107,8 +111,16 @@ function assertFn(condition, message_or_callback = "") {
   }
 }
 
-/** @type {declaredAssertionFunction} */
-const assert = assertFn;
+/** 
+ * HACK: this is a hack so I can get `assert` to behave like a TypeScript 
+ * assertion function.  This is so I can use `assert(condition)` in my code and
+ * get the same type checking I get when I would use
+ * `if (!condition) throw new Error()`.
+ * 
+ * @type {declared_assert_function}
+ */
+const assert = assert_function;
+
 
 /**
  * Helper function for unimplemented code that was not expected to need to be
@@ -122,6 +134,7 @@ function error_unexpected_unimplemented(message = "") {
   throw new Error(`Unexpected error: not implemented: ${message}`);
 }
 
+
 /**
  * Helper function for unexpected errors.
  * 
@@ -132,6 +145,7 @@ function error_unexpected_unimplemented(message = "") {
 function error_unexpected(message = "") {
   throw new Error(`Unexpected error: ${message}`);
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Token types
@@ -259,7 +273,7 @@ function do_get_simplified_parse_node(text, parse_node, include_comments, includ
 
 
 /**
- * Constructs a simplified parse tree from the parse tree.
+ * Constructs simplified parse trees from the input parse trees.
  * 
  * @param {string} text 
  * @param {ParseTree[]} parse_trees 
@@ -318,7 +332,9 @@ ${prepad} | ${" ".repeat(column_index)}^ ${error_message}`;
   return full_error_message;
 }
 
+
 /**
+ * Tokenizes the text.
  * 
  * @param {string} text 
  * 
@@ -549,7 +565,6 @@ export function tokenize(text) {
     }
   }
 
-
   // Check if we've still got a work-in-progress token that needs to be handled.
 
   if (token !== null) {
@@ -588,12 +603,11 @@ export function tokenize(text) {
 
       if (start_line === end_line) {
         // 1 line
+
         error_message.push(`error[${error_code}]:\n`);
         error_message.push(`${prepad.padStart(gutter_length, " ")} | ${" ".repeat(start_column)}v-- start of double-quote string\n`);
         error_message.push(`${`${end_line + 1}`.padStart(gutter_length, " ")} | ${lines[end_line + 0]} \n`);
         error_message.push(`${prepad.padStart(gutter_length, " ")} | ${" ".repeat(end_column)}^-- unterminated double-quote string\n`);
-
-
       } else if (end_line - start_line <= 5) {
         // 2 - 5 lines
         error_message.push(`error[${error_code}]:\n`);
@@ -631,7 +645,6 @@ export function tokenize(text) {
       mode = MODE_UNDETERMINED;
     } else if (mode === MODE_MULTI_LINE_COMMENT) {
       // We forgot to close multi line comment
-
       const error_code = ERROR_CODE_UNTERMINATED_MULTI_LINE_COMMENT;
 
       /** @type {string[]} */
@@ -659,12 +672,11 @@ export function tokenize(text) {
 
       if (start_line === end_line) {
         // 1 line
+
         error_message.push(`error[${error_code}]:\n`);
         error_message.push(`${prepad.padStart(gutter_length, " ")} | ${" ".repeat(start_column)}v-- start of multi-line comment\n`);
         error_message.push(`${`${end_line + 1}`.padStart(gutter_length, " ")} | ${lines[end_line + 0]} \n`);
         error_message.push(`${prepad.padStart(gutter_length, " ")} | ${" ".repeat(end_column)}^-- unterminated multi-line comment, ${nesting_message}\n`);
-
-
       } else if (end_line - start_line <= 5) {
         // 2 - 5 lines
         error_message.push(`error[${error_code}]:\n`);
@@ -834,12 +846,14 @@ export function parse(text, include_comments = true, include_whitespace = true, 
 
         if (start_token.line === end_token.line) {
           // 1 line
+
           error_message.push(`error[${error_code}]:\n`);
           error_message.push(`${prepad.padStart(gutter_length, " ")} | ${" ".repeat(start_token.column)}v-- opening delimiter\n`);
           error_message.push(`${`${end_token.line + 1}`.padStart(gutter_length, " ")} | ${lines[end_token.line + 0]} \n`);
           error_message.push(`${prepad.padStart(gutter_length, " ")} | ${" ".repeat(end_token.column)}^-- closing delimiter, saw ${end_value} but expected to see ${GET_CLOSE_VARIANT[start_value]}\n`);
         } else if (end_token.line - start_token.line <= 5) {
           // 2 - 5 lines
+
           error_message.push(`error[${error_code}]:\n`);
           error_message.push(`${prepad.padStart(gutter_length, " ")} | ${" ".repeat(start_token.column)}v-- opening delimiter\n`);
           error_message.push(`${`${start_token.line + 1}`.padStart(gutter_length, " ")} | ${lines[start_token.line + 0]} \n`);
@@ -853,6 +867,7 @@ export function parse(text, include_comments = true, include_whitespace = true, 
           error_message.push(`${prepad.padStart(gutter_length, " ")} | ${" ".repeat(end_token.column)}^-- closing delimiter, saw ${end_value} but expected to see ${GET_CLOSE_VARIANT[start_value]}\n`);
         } else {
           // +5 lines
+
           error_message.push(`error[${error_code}]:\n`);
           error_message.push(`${prepad.padStart(gutter_length, " ")} | ${" ".repeat(start_token.column)}v-- opening delimiter\n`);
           error_message.push(`${`${start_token.line + 1}`.padStart(gutter_length, " ")} | ${lines[start_token.line + 0]} \n`);

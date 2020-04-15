@@ -1,5 +1,4 @@
 import { assert } from "./utils.js";
-
 import * as Syntax from "../src/syntax.js";
 
 
@@ -31,9 +30,11 @@ function test_empty_text() {
   assert_is_ok("");
 }
 
+
 function test_whitespace() {
   assert_is_ok(" ");
 }
+
 
 function test_nesting() {
   assert_is_ok("()");
@@ -55,6 +56,7 @@ function test_nesting() {
   assert_is_ok("(()(()(((((()))))())())((())(())())(())()()()())");
 }
 
+
 function test_list_delim_mismatch() {
   assert_is_not_ok("(]");
   assert_is_not_ok("(}");
@@ -68,6 +70,7 @@ function test_list_delim_mismatch() {
      d  ]  e
      `);
 }
+
 
 function test_broken_nesting() {
   assert_is_not_ok("(");
@@ -104,6 +107,7 @@ function test_broken_nesting() {
  `);
 }
 
+
 function test_single_line_comments() {
   assert_is_ok(";");
   assert_is_ok(" ;");
@@ -114,6 +118,7 @@ function test_single_line_comments() {
 
 `);
 }
+
 
 function test_multi_line_comment() {
   assert_is_not_ok("|#");
@@ -128,6 +133,7 @@ function test_multi_line_comment() {
   `);
 }
 
+
 function test_double_quoted_strings() {
   assert_is_ok(`"\\""`);
 
@@ -138,9 +144,11 @@ function test_double_quoted_strings() {
 `);
 }
 
+
 function test_single_quoted_strings() {
 
 }
+
 
 export function run_tests() {
 

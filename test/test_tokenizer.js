@@ -1,5 +1,4 @@
 import { assert } from "./utils.js";
-
 import * as Syntax from "../src/syntax.js";
 
 
@@ -25,6 +24,7 @@ function assert_is_not_ok(text, message_or_callback = "Assertion failed!") {
 
   assert(!tokenization_result.ok, message_or_callback);
 }
+
 
 function test_text_reconstruction() {
   // Custom test
