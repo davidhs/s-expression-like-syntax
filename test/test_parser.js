@@ -205,3 +205,40 @@ export function run_tests() {
   test_something();
 }
 
+
+if (false) {
+  const text = `
+  
+  ; Hello
+  (fn add (a b)
+    (+ a b)
+  )
+
+  #| This is a 
+     #| Multi-line |#
+    nesting comment
+  |#
+
+  (fn inc (x)
+    (+ x 1)
+  )
+  
+  `;
+
+  const include_comments = true;
+  const include_whitespace = true;
+  const include_list_delimiters = true;
+  
+  const parse_result = Syntax.parse(text, include_comments, include_whitespace, include_list_delimiters);
+
+  if (parse_result.ok) {
+    const { parse_trees } = parse_result;
+
+    console.info(JSON.stringify(parse_trees, null, 2));
+
+    // console.info(parse_trees);
+  } else {
+    console.error(parse_result.error_code);
+  }
+}
+

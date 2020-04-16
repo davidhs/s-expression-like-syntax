@@ -47,6 +47,8 @@ type Token = {
   length: number;
   line: number;
   column: number;
+
+  value: string;
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -73,7 +75,7 @@ type ParseNodeList = {
   line: number;
   column: number;
 
-  children: ParseNode[];
+  value: ParseNode[];
 };
 
 type ParseNode = Token | ParseNodeList;

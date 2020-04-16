@@ -227,6 +227,9 @@ export class Token {
     this.length = length;
     this.line = line;
     this.column = column;
+
+    /** @type {string} */
+    this.value = "";
   }
 }
 
@@ -249,7 +252,7 @@ export class ParseNodeList {
     this.column = column;
 
     /** @type {ParseNode[]} */
-    this.children = [];
+    this.value = [];
   }
 }
 
@@ -269,7 +272,7 @@ function parse_node_list_add_child_length(parse_node_list, child) {
  */
 function parse_node_list_add_child(parse_node_list, child) {
   parse_node_list.length += child.length;
-  parse_node_list.children.push(child);
+  parse_node_list.value.push(child);
 }
 
 
@@ -295,8 +298,8 @@ function do_get_simplified_parse_node(text, parse_node, include_comments, includ
 
     const simplified_parse_tree = [];
 
-    for (let i = 0; i < parse_tree.children.length; i += 1) {
-      const sub_parse_node = parse_tree.children[i];
+    for (let i = 0; i < parse_tree.value.length; i += 1) {
+      const sub_parse_node = parse_tree.value[i];
 
       const maybe_sub_parse_tree = do_get_simplified_parse_node(text, sub_parse_node, include_comments, include_whitespace);
 
@@ -434,6 +437,7 @@ export function tokenize(text) {
         if (character.match(/[([{]/) !== null) {
           // Opening list delimiter
           token = new Token(TOKEN_TYPE_LIST_DELIMITER_OPEN, text_index, 1, line_index, column_index);
+          token.value = text.substring(token.index, token.index + token.length);
           tokens.push(token);
           token = null;
           mode = MODE_UNDETERMINED;
@@ -441,6 +445,7 @@ export function tokenize(text) {
         } else if (character.match(/[)\]}]/) !== null) {
           // Closing list delimiter
           token = new Token(TOKEN_TYPE_LIST_DELIMITER_CLOSE, text_index, 1, line_index, column_index);
+          token.value = text.substring(token.index, token.index + token.length);
           tokens.push(token);
           token = null;
           mode = MODE_UNDETERMINED;
@@ -496,6 +501,7 @@ export function tokenize(text) {
             token.length += 1;
             character_consumed = true;
           } else {
+            token.value = text.substring(token.index, token.index + token.length);
             tokens.push(token);
             token = null;
             mode = MODE_UNDETERMINED;
@@ -511,6 +517,8 @@ export function tokenize(text) {
             || (character.match(/[()[\]{}]/) !== null)
             || (character === "#" && text[text_index + 1] === "|")
             || (character === "|" && text[text_index + 1] === "#")) {
+            // ...
+            token.value = text.substring(token.index, token.index + token.length);
             tokens.push(token);
             token = null;
             mode = MODE_UNDETERMINED;
@@ -521,6 +529,7 @@ export function tokenize(text) {
         } else if (mode === MODE_DOUBLE_QUOTE_STRING) {
           if (character === "\"" && text[text_index - 1] !== "\\") {
             token.length += 1;
+            token.value = text.substring(token.index, token.index + token.length);
             tokens.push(token);
             token = null;
             mode = MODE_UNDETERMINED;
@@ -532,6 +541,7 @@ export function tokenize(text) {
         } else if (mode === MODE_SINGLE_QUOTE_STRING) {
           if (character === "'" && text[text_index - 1] !== "\\") {
             token.length += 1;
+            token.value = text.substring(token.index, token.index + token.length);
             tokens.push(token);
             token = null;
             mode = MODE_UNDETERMINED;
@@ -543,6 +553,7 @@ export function tokenize(text) {
         } else if (mode === MODE_SINGLE_LINE_COMMENT) {
           if (character === "\n") {
             token.length += 1;
+            token.value = text.substring(token.index, token.index + token.length);
             tokens.push(token);
             token = null;
             mode = MODE_UNDETERMINED;
@@ -595,6 +606,7 @@ export function tokenize(text) {
           character_consumed = true;
 
           if (multi_line_comment_nesting_level === 0) {
+            token.value = text.substring(token.index, token.index + token.length);
             tokens.push(token);
             token = null;
             mode = MODE_UNDETERMINED;
@@ -624,10 +636,12 @@ export function tokenize(text) {
     if (mode === MODE_UNDETERMINED) {
       error_unexpected("Mode should not be unknown if token is not null.");
     } else if (mode === MODE_WHITESPACE) {
+      token.value = text.substring(token.index, token.index + token.length);
       tokens.push(token);
       token = null;
       mode = MODE_UNDETERMINED;
     } else if (mode === MODE_SINGLE_LINE_COMMENT) {
+      token.value = text.substring(token.index, token.index + token.length);
       tokens.push(token);
       token = null;
       mode = MODE_UNDETERMINED;
@@ -693,6 +707,7 @@ export function tokenize(text) {
         error_message: error_message.join(""),
       };
     } else if (mode === MODE_WORD) {
+      token.value = text.substring(token.index, token.index + token.length);
       tokens.push(token);
       token = null;
       mode = MODE_UNDETERMINED;
@@ -756,7 +771,7 @@ export function tokenize(text) {
         error_message.push(`${prepad.padStart(gutter_length, " ")} | ${" ".repeat(end_column)}^-- unterminated multi-line comment, ${nesting_message}\n`);
       }
 
-      return { 
+      return {
         ok: false,
         error_code: error_code,
         error_message: error_message.join(""),
@@ -868,7 +883,7 @@ export function parse(text, include_comments = true, include_whitespace = true, 
       // Check if we're closing with the proper delimiter //
       //////////////////////////////////////////////////////
 
-      
+
       const previous_delim_token = list_delim_stack.pop();
 
       assert(typeof previous_delim_token !== "undefined");
@@ -954,7 +969,7 @@ export function parse(text, include_comments = true, include_whitespace = true, 
       error_unexpected_unimplemented(`Unimplemented for token: ${token.type}`);
     }
   }
-  
+
   // Check if we're properly nested.
 
   if (parse_node_list_stack.length !== 1) {
@@ -980,7 +995,7 @@ export function parse(text, include_comments = true, include_whitespace = true, 
 
   assert(parse_node_list_stack.length === 1, `Expected parse tree stack to only contain one element, but has: ${parse_node_list_stack.length}`);
 
-  const parse_nodes = parse_node_list_stack[0].children;
+  const parse_nodes = parse_node_list_stack[0].value;
 
   const parse_trees = parse_nodes;
 
