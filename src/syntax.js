@@ -198,6 +198,7 @@ export const ERROR_CODE_UNTERMINATED_MULTI_LINE_COMMENT = 16;
 
 // Given an opening list delimiter this map should return the expected list
 // closing delimiter.
+/** @type {{[key: string]: string | undefined}} */
 export const GET_CLOSE_VARIANT = {
   "(": ")",
   "{": "}",
