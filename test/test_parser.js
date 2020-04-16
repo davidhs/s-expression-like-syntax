@@ -26,6 +26,21 @@ function assert_is_not_ok(text, message_or_callback = "Assertion failed!") {
 }
 
 
+/**
+ * @type {<T>(a: T, b: T) => void}
+ */
+function assert_is_eq(a, b) {
+  assert(a === b);
+}
+
+/**
+ * @type {<T>(a: T, b: T) => void}
+ */
+function assert_is_neq(a, b) {
+  assert(a !== b);
+}
+
+
 function test_empty_text() {
   assert_is_ok("");
 }
@@ -40,7 +55,7 @@ function test_nesting() {
   assert_is_ok("()");
   assert_is_ok("[]");
   assert_is_ok("{}");
-  
+
   assert_is_ok("(())");
   assert_is_ok("[()]");
   assert_is_ok("{()}");
@@ -81,7 +96,7 @@ function test_broken_nesting() {
   assert_is_not_ok("]");
   assert_is_not_ok("}");
 
-  
+
   assert_is_not_ok("((");
   assert_is_not_ok("[[");
   assert_is_not_ok("{{");
@@ -149,9 +164,30 @@ function test_single_quoted_strings() {
 
 }
 
+function test_something() {
+
+  {
+    const text = `; Hello
+(say (name [x 1 "y"]))`;
+    const parse_result = Syntax.parse(text);
+    assert(parse_result.ok);
+
+    const { parse_trees } = parse_result;
+    const simplified_parse_trees = Syntax.to_simplified_parse_trees(text, parse_trees, true, true);
+
+    const a = simplified_parse_trees;
+    const b = ["; Hello\n", ["(", "say", " ", ["(", "name", " ", ["[", "x", " ", "1", " ", "\"y\"", "]"], ")"], ")"]];
+
+    const sa = JSON.stringify(a);
+    const sb = JSON.stringify(b);
+
+    assert_is_eq(sa, sb);
+
+  }
+}
+
 
 export function run_tests() {
-
   test_nesting();
 
   test_empty_text();
@@ -165,4 +201,7 @@ export function run_tests() {
 
   test_single_line_comments();
   test_multi_line_comment();
+
+  test_something();
 }
+

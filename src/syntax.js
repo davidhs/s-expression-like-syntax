@@ -4,7 +4,7 @@
 // A parser that parses text that looks like S-expressions, but note quite, and
 // with a bunch of other extensions.
 //
-// v2020-04-15-145330
+// v2020-04-16-223100
 //
 // ---------------
 // List delimiters
@@ -150,17 +150,22 @@ function error_unexpected(message = "") {
 ////////////////////////////////////////////////////////////////////////////////
 // Token types
 
-export const TOKEN_TYPE_WHITESPACE = 1;
-export const TOKEN_TYPE_WORD = 2;
-
-export const TOKEN_TYPE_DOUBLE_QUOTE_STRING = 4;
-export const TOKEN_TYPE_SINGLE_QUOTE_STRING = 8;
-
-export const TOKEN_TYPE_LIST_DELIMITER_OPEN = 16;
-export const TOKEN_TYPE_LIST_DELIMITER_CLOSE = 32;
-
-export const TOKEN_TYPE_SINGLE_LINE_COMMENT = 64;
-export const TOKEN_TYPE_MULTI_LINE_COMMENT = 128;
+/** @type {TokenTypeWhitespace} */
+export const TOKEN_TYPE_WHITESPACE /************/ = 100;
+/** @type {TokenTypeWord} */
+export const TOKEN_TYPE_WORD /******************/ = 101;
+/** @type {TokenTypeDoubleQuoteString} */
+export const TOKEN_TYPE_DOUBLE_QUOTE_STRING /***/ = 102;
+/** @type {TokenTypeSingleQuoteString} */
+export const TOKEN_TYPE_SINGLE_QUOTE_STRING /***/ = 103;
+/** @type {TokenTypeListDelimiterOpen} */
+export const TOKEN_TYPE_LIST_DELIMITER_OPEN /***/ = 104;
+/** @type {TokenTypeListDelimiterClose} */
+export const TOKEN_TYPE_LIST_DELIMITER_CLOSE /**/ = 105;
+/** @type {TokenTypeSingleLineComment} */
+export const TOKEN_TYPE_SINGLE_LINE_COMMENT /***/ = 106;
+/** @type {TokenTypeMultiLineComment} */
+export const TOKEN_TYPE_MULTI_LINE_COMMENT /****/ = 107;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Different parse and tokenization modes.
@@ -209,7 +214,7 @@ export const GET_CLOSE_VARIANT = {
 export class Token {
 
   /**
-   * @param {number} type Type of token.
+   * @param {TokenType} type Type of token.
    * @param {number} index Index of token in text.
    * @param {number} length Length of token.
    * @param {number} line Line index of start of token in text.
@@ -225,6 +230,54 @@ export class Token {
 }
 
 
+
+export class ParseNodeList {
+
+  /**
+   * 
+   * @param {ParseNodeTypeList} type 
+   * @param {number} index 
+   * @param {number} length 
+   * @param {number} line 
+   * @param {number} column 
+   */
+  constructor(type, index, length, line, column) {
+    this.type = type;
+    this.index = index;
+    this.length = length;
+    this.line = line;
+    this.column = column;
+
+    /** @type {ParseNode[]} */
+    this.children = [];
+  }
+};
+
+/**
+ * 
+ * @param {ParseNodeList} parse_node_list 
+ * @param {ParseNode} child 
+ */
+function parse_node_list_add_child_length(parse_node_list, child) {
+  parse_node_list.length += child.length;
+}
+
+/**
+ * 
+ * @param {ParseNodeList} parse_node_list 
+ * @param {ParseNode} child 
+ */
+function parse_node_list_add_child(parse_node_list, child) {
+  parse_node_list.length += child.length;
+  parse_node_list.children.push(child);
+}
+
+
+/** @type {ParseNodeTypeList} */
+export const PARSE_NODE_TYPE_LIST = 200;
+
+
+
 /**
  * DO NOT CALL THIS FUNCTION EXCEPT FROM `to_simplified_parse_tree`.
  * 
@@ -236,13 +289,15 @@ export class Token {
  * @returns {SimplifiedParseNode | null}
  */
 function do_get_simplified_parse_node(text, parse_node, include_comments, include_whitespace) {
-  if (Array.isArray(parse_node)) {
+  if (parse_node.type === PARSE_NODE_TYPE_LIST) {
+    // List
+
     const parse_tree = parse_node;
 
     const simplified_parse_tree = [];
 
-    for (let i = 0; i < parse_tree.length; i += 1) {
-      const sub_parse_node = parse_tree[i];
+    for (let i = 0; i < parse_tree.children.length; i += 1) {
+      const sub_parse_node = parse_tree.children[i];
 
       const maybe_sub_parse_tree = do_get_simplified_parse_node(text, sub_parse_node, include_comments, include_whitespace);
 
@@ -254,7 +309,8 @@ function do_get_simplified_parse_node(text, parse_node, include_comments, includ
     }
 
     return simplified_parse_tree;
-  } else if (parse_node instanceof Token) {
+  } else {
+    // Token
     const token = parse_node;
 
     if (!include_whitespace && (token.type === TOKEN_TYPE_WHITESPACE)) {
@@ -266,8 +322,6 @@ function do_get_simplified_parse_node(text, parse_node, include_comments, includ
 
       return sub_text;
     }
-  } else {
-    error_unexpected();
   }
 }
 
@@ -283,8 +337,8 @@ function do_get_simplified_parse_node(text, parse_node, include_comments, includ
  * @returns {SimplifiedParseTree[]}
  */
 export function to_simplified_parse_trees(text, parse_trees, include_comments = true, include_whitespace = true) {
-  assert(typeof text === "string");
-  assert(Array.isArray(parse_trees));
+  assert(typeof text === "string", "Text should be a string");
+  assert(Array.isArray(parse_trees), "Parse trees should be an array of parse trees.");
 
   const parse_nodes = parse_trees;
 
@@ -375,8 +429,8 @@ export function tokenize(text) {
       assert(character_consumption_loop_count <= character_consumption_loop_limit, `Could NOT consume character [${character}], loop limit reached!`);
 
       if (mode === MODE_UNDETERMINED) {
-        assert(token === null, "Assertion failed: token expected to be null.");
-        assert(multi_line_comment_nesting_level === 0);
+        assert(token === null, "token expected to be null.");
+        assert(multi_line_comment_nesting_level === 0, "multi-line comment nesting expected to be 0.");
 
         if (character.match(/[([{]/) !== null) {
           // Opening list delimiter
@@ -436,7 +490,7 @@ export function tokenize(text) {
           character_consumed = true;
         }
       } else {
-        assert(token !== null, `Assertion failed: token expected not to be null.`);
+        assert(token !== null, `token expected not to be null.`);
 
         if (mode === MODE_WHITESPACE) {
           if (character.match(/\s/) !== null) {
@@ -499,7 +553,7 @@ export function tokenize(text) {
             character_consumed = true;
           }
         } else if (mode === MODE_MULTI_LINE_COMMENT_START) {
-          assert(multi_line_comment_nesting_level > 0);
+          assert(multi_line_comment_nesting_level > 0, "multi-lien comment nesting level expected to be greater than 0");
           assert(character === "|", `Expected | but got: ${character}`);
 
           // ...#|... (then go to MODE_MULTI_LINE_COMMENT)
@@ -703,7 +757,7 @@ export function tokenize(text) {
         error_message.push(`${prepad.padStart(gutter_length, " ")} | ${" ".repeat(end_column)}^-- unterminated multi-line comment, ${nesting_message}\n`);
       }
 
-      return {
+      return { 
         ok: false,
         error_code: error_code,
         error_message: error_message.join(""),
@@ -737,17 +791,6 @@ export function tokenize(text) {
  * @returns {ParseResult}
  */
 export function parse(text, include_comments = true, include_whitespace = true, include_list_delimiters = true) {
-  // NOTE: this function should ONLY throw an error if the logic of this
-  // function has been violated, otherwise it should return a result which can
-  // be ok or not ok.  If it is ok then it should contain the parse tree, if it
-  // is not ok then it should return an error message and an error code.
-  //
-  // NOTE: NO assertions should fail in this code given that the type of the
-  // arguments are valid.
-  //
-  // NOTE: this code shouldn't throw any errors once fully implemented and
-  // tested given that the arguments are valid.
-
   const tokenization_result = tokenize(text);
 
   if (!tokenization_result.ok) {
@@ -761,34 +804,50 @@ export function parse(text, include_comments = true, include_whitespace = true, 
   /** @type {Token[]} */
   const list_delim_stack = [];
 
-  // Parse tree stack (used when constructing the parse tree).
-  /** @type {ParseTree[][]} */
-  const parse_tree_stack = [[]];
+  // This first stack element will be a temporary list.  At the end the children
+  // of it will be treated as parse trees.
+  /** @type {ParseNodeList[]} */
+  const parse_node_list_stack = [new ParseNodeList(PARSE_NODE_TYPE_LIST, 0, 0, 0, 0)];
+
 
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
 
     if (token.type === TOKEN_TYPE_WHITESPACE) {
       if (include_whitespace) {
-        parse_tree_stack[parse_tree_stack.length - 1].push(token);
+        parse_node_list_add_child(parse_node_list_stack[parse_node_list_stack.length - 1], token);
+      } else {
+        parse_node_list_add_child_length(parse_node_list_stack[parse_node_list_stack.length - 1], token);
       }
     } else if (token.type === TOKEN_TYPE_WORD || token.type === TOKEN_TYPE_DOUBLE_QUOTE_STRING || token.type === TOKEN_TYPE_SINGLE_QUOTE_STRING) {
-      parse_tree_stack[parse_tree_stack.length - 1].push(token);
+      parse_node_list_add_child(parse_node_list_stack[parse_node_list_stack.length - 1], token);
     } else if (token.type === TOKEN_TYPE_LIST_DELIMITER_OPEN) {
       list_delim_stack.push(token);
-      parse_tree_stack.push([]);
+
+      const parse_node_list = new ParseNodeList(PARSE_NODE_TYPE_LIST, token.index, 0, token.line, token.column);
+      parse_node_list_stack.push(parse_node_list);
 
       if (include_list_delimiters) {
-        parse_tree_stack[parse_tree_stack.length - 1].push(token);
+        parse_node_list_add_child(parse_node_list_stack[parse_node_list_stack.length - 1], token);
+      } else {
+        parse_node_list_add_child_length(parse_node_list_stack[parse_node_list_stack.length - 1], token);
       }
     } else if (token.type === TOKEN_TYPE_SINGLE_LINE_COMMENT || token.type === TOKEN_TYPE_MULTI_LINE_COMMENT) {
       if (include_comments) {
-        parse_tree_stack[parse_tree_stack.length - 1].push(token);
+        parse_node_list_add_child(parse_node_list_stack[parse_node_list_stack.length - 1], token);
+      } else {
+        parse_node_list_add_child_length(parse_node_list_stack[parse_node_list_stack.length - 1], token);
       }
     } else if (token.type === TOKEN_TYPE_LIST_DELIMITER_CLOSE) {
       if (include_list_delimiters) {
-        parse_tree_stack[parse_tree_stack.length - 1].push(token);
+        parse_node_list_add_child(parse_node_list_stack[parse_node_list_stack.length - 1], token);
+      } else {
+        parse_node_list_add_child_length(parse_node_list_stack[parse_node_list_stack.length - 1], token);
       }
+
+      ////////////////////////////////////////////////
+      // Check if we're closing too many delimiters //
+      ////////////////////////////////////////////////
 
       if (list_delim_stack.length === 0) {
         // Error
@@ -806,6 +865,11 @@ export function parse(text, include_comments = true, include_whitespace = true, 
         };
       }
 
+      //////////////////////////////////////////////////////
+      // Check if we're closing with the proper delimiter //
+      //////////////////////////////////////////////////////
+
+      
       const previous_delim_token = list_delim_stack.pop();
 
       assert(typeof previous_delim_token !== "undefined");
@@ -814,11 +878,11 @@ export function parse(text, include_comments = true, include_whitespace = true, 
       const end_token_lexeme = text.substring(token.index, token.index + token.length);
 
       if (GET_CLOSE_VARIANT[start_token_lexeme] === end_token_lexeme) {
-        const parse_tree_level = parse_tree_stack.pop();
+        const parse_node_list = parse_node_list_stack.pop();
 
-        assert(typeof parse_tree_level !== "undefined");
+        assert(typeof parse_node_list !== "undefined");
 
-        parse_tree_stack[parse_tree_stack.length - 1].push(parse_tree_level);
+        parse_node_list_add_child(parse_node_list_stack[parse_node_list_stack.length - 1], parse_node_list);
       } else {
         // Error
         const error_code = ERROR_CODE_DELIM_MISMATCH;
@@ -894,8 +958,8 @@ export function parse(text, include_comments = true, include_whitespace = true, 
   
   // Check if we're properly nested.
 
-  if (parse_tree_stack.length !== 1) {
-    assert(parse_tree_stack.length > 1);
+  if (parse_node_list_stack.length !== 1) {
+    assert(parse_node_list_stack.length > 1);
 
     const token = list_delim_stack[list_delim_stack.length - 1];
 
@@ -915,9 +979,11 @@ export function parse(text, include_comments = true, include_whitespace = true, 
 
   // Return OK result with parse tree.
 
-  assert(parse_tree_stack.length === 1, `Expected parse tree stack to only contain one element, but has: ${parse_tree_stack.length}`);
+  assert(parse_node_list_stack.length === 1, `Expected parse tree stack to only contain one element, but has: ${parse_node_list_stack.length}`);
 
-  const parse_trees = parse_tree_stack[0];
+  const parse_nodes = parse_node_list_stack[0].children;
+
+  const parse_trees = parse_nodes;
 
   return {
     ok: true,
