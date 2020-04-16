@@ -1,14 +1,12 @@
 {
   "name": "s-expression-like-syntax",
   "version": "0.0.1",
-  "description": "",
-  "main": "",
   "scripts": {
-    "test": "deno test/test.js"
+    "test": "deno test/test.js",
+    "lint": "npx eslint **/*.js"
   },
-  "author": "",
-  "license": "",
   "devDependencies": {
-    "eslint": "^6.8.0"
+    "eslint": "6.8.0",
+    "typescript": "3.8.3"
   }
 }

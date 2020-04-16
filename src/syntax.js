@@ -230,7 +230,6 @@ export class Token {
 }
 
 
-
 export class ParseNodeList {
 
   /**
@@ -251,7 +250,7 @@ export class ParseNodeList {
     /** @type {ParseNode[]} */
     this.children = [];
   }
-};
+}
 
 /**
  * 
@@ -275,7 +274,6 @@ function parse_node_list_add_child(parse_node_list, child) {
 
 /** @type {ParseNodeTypeList} */
 export const PARSE_NODE_TYPE_LIST = 200;
-
 
 
 /**
