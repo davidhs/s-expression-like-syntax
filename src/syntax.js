@@ -4,7 +4,7 @@
 // A parser that parses text that looks like S-expressions, but note quite, and
 // with a bunch of other extensions.
 //
-// v2020-04-16-223100
+// v2020-04-17-163900
 //
 // ---------------
 // List delimiters
@@ -661,7 +661,6 @@ export function tokenize(text) {
       const end_column = column_index;
 
       let gutter_length = 0;
-
       gutter_length = Math.max(gutter_length, `${start_line + 1}`.length);
       gutter_length = Math.max(gutter_length, `${end_line + 1}`.length);
       gutter_length = Math.max(gutter_length, "...".length);
